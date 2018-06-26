@@ -16,12 +16,12 @@ public class IndexLoaderAndTester {
 		
 //		prunedLandmarkLabeling.ReadBinaryIndex("/Users/mnamaki/Documents/workspace/HelloWorldCPlusPlus/amazon_index.cout");
 //		
-		prunedLandmarkLabeling.LoadIndex("/Users/mnamaki/AQPEQ/GraphExamples/k1Infra/distGraph/k1_8bits.jin");
+		prunedLandmarkLabeling.LoadIndex("/Users/mnamaki/Desktop/index_from_java");
 //		
-		System.out.println(prunedLandmarkLabeling.queryDistance(5, 6));
-		System.out.println(prunedLandmarkLabeling.queryDistance(5, 8));
-		System.out.println(prunedLandmarkLabeling.queryDistance(8, 7));
-		System.out.println(prunedLandmarkLabeling.queryDistance(7, 5));
+		System.out.println(prunedLandmarkLabeling.queryDistance(12, 8));
+		System.out.println(prunedLandmarkLabeling.queryDistance(3, 3));
+		System.out.println(prunedLandmarkLabeling.queryDistance(4, 1));
+		System.out.println(prunedLandmarkLabeling.queryDistance(3, 5));
 		
 		
 

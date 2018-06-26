@@ -24,7 +24,6 @@ import aqpeq.utilities.Dummy.DummyProperties;
 import bank.keywordSearch.DistinctRootExperiment;
 import baselines.CoOccurrence;
 import baselines.DataCloudDistinguishability;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.RelationshipInfra;
 import incrementalEvaluation.IncEval;
@@ -98,7 +97,6 @@ public class PairwiseKeywordSearch {
 	private static String database = "database";
 	private static String catDatabase = "catDatabase";
 
-	private static BerkleleyDB berkeleyDB;
 	private static boolean withProperties = true;
 
 	// experiments
@@ -275,7 +273,7 @@ public class PairwiseKeywordSearch {
 										fullOutputsQueueTemp.add(rClique.resultTree);
 									}
 
-									Visualizer.visualizeOutput(fullOutputsQueueTemp, graph, null, berkeleyDB, keywords);
+									Visualizer.visualizeOutput(fullOutputsQueueTemp, graph, null, keywords);
 									System.out.println("finsihed:");
 								}
 
@@ -521,7 +519,7 @@ public class PairwiseKeywordSearch {
 											}
 
 											Visualizer.visualizeOutput(fullOutputsQueueTemp, graph,
-													estimatedWeightOfSuggestedKeywordMap, berkeleyDB, keywords);
+													estimatedWeightOfSuggestedKeywordMap, keywords);
 											System.out.println("finsihed:");
 										}
 
@@ -1268,7 +1266,7 @@ public class PairwiseKeywordSearch {
 			keywordsSet.add(StringPoolUtility.getIdOfStringFromPool(keyword));
 		}
 
-		graphKWSExpand = new GraphKWSExpand(graph, topNAnswers, delta, distanceBound, berkeleyDB, keywordsSet);
+		graphKWSExpand = new GraphKWSExpand(graph, topNAnswers, delta, distanceBound, keywordsSet);
 		// quality preservable keywords K ={(k′, w′), . . . }.
 		HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap = graphKWSExpand.expand();
 		return estimatedWeightOfSuggestedKeywordMap;

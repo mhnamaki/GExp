@@ -22,7 +22,6 @@ import com.mxgraph.swing.mxGraphComponent;
 
 import aqpeq.utilities.StringPoolUtility;
 import aqpeq.utilities.Dummy.DummyProperties;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.NodeInfra;
 import graphInfra.RelationshipInfra;

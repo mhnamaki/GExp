@@ -18,7 +18,8 @@ public class GraphInfraToUndirectedRelsWriter {
 
 	public static void main(String[] args) throws Exception {
 
-		String graphInfraPath = "/Users/mnamaki/AQPEQ/GraphExamples/subgraphTest/graph/";
+		//String graphInfraPath = "/Users/mnamaki/AQPEQ/GraphExamples/subgraphTest/graph/";
+		String graphInfraPath = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/citation/graph/";
 		if (args.length > 0) {
 			graphInfraPath = args[0];
 		}

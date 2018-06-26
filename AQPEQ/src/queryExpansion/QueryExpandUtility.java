@@ -3,7 +3,6 @@ package queryExpansion;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 
 public class QueryExpandUtility {

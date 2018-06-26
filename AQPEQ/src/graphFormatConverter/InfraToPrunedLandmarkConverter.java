@@ -11,8 +11,8 @@ import graphInfra.NodeInfra;
 
 public class InfraToPrunedLandmarkConverter {
 
-	public String graphInfraPath = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/amazon/amazonGraphInfra/";
-	public String newGraphForPrunedLandmarkTest = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/amazon/amazonGraphInfra/amazonForLandmarkTest.tsv";
+	public String graphInfraPath = "/Users/mnamaki/AQPEQ/GraphExamples/demo/IMDB1/";
+	public String newGraphForPrunedLandmarkTest = "/Users/mnamaki/AQPEQ/GraphExamples/demo/IMDB1/IMDB1.tsv";
 
 	public static void main(String[] args) throws Exception {
 		InfraToPrunedLandmarkConverter converter = new InfraToPrunedLandmarkConverter();

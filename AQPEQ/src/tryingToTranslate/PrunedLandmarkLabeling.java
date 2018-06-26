@@ -1,3 +1,4 @@
+// this is a tested version before adding term-nodes to it.
 package tryingToTranslate;
 
 import java.io.BufferedReader;
@@ -6,26 +7,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.io.OutputStreamWriter;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
 public class PrunedLandmarkLabeling {
 
-	int kNumBitParallelRoots = 4;
+	int kNumBitParallelRoots = 8;
 	Index_t[] index_;
 	int num_v_;
 	Integer RAND_MAX = 0x7fffffff;
-	Integer INF8 = 100;
+	byte INF8 = 100;
 	Integer INT_MAX = Integer.MAX_VALUE;
 
 	public PrunedLandmarkLabeling(int kNumBitParallelRoots) {
@@ -35,6 +34,486 @@ public class PrunedLandmarkLabeling {
 	public PrunedLandmarkLabeling(int kNumBitParallelRoots, String indexPath) throws Exception {
 		this.kNumBitParallelRoots = kNumBitParallelRoots;
 		this.LoadIndex(indexPath);
+	}
+
+	public void ConstructIndex(ArrayList<Pair<Integer, Integer>> es, int num_v) {
+		// the node id should start from 1 not zero!
+		num_v_ = num_v + 1;
+		int E = es.size();
+		int V = 0;
+		for (int i = 0; i < es.size(); ++i) {
+			V = Math.max(V, Math.max(es.get(i).first, es.get(i).second) + 1);
+		}
+
+		// std::vector<std::vector<int> > adj(V);
+		ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+
+		// khodam
+		for (int i = 0; i < V; i++) {
+			adj.add(new ArrayList<>());
+		}
+
+		// for each edge we consider both endpoints to be added into adj.
+		for (int i = 0; i < es.size(); ++i) {
+			int v = es.get(i).first, w = es.get(i).second;
+			adj.get(v).add(w);
+			adj.get(w).add(v);
+		}
+
+		// generating an index entry for each node.
+		index_ = new Index_t[V];
+		for (int v = 0; v < V; ++v) {
+			// for at most kNumBitParallelRoots of their neighbors
+			index_[v] = new Index_t(kNumBitParallelRoots);
+		}
+
+		ArrayList<Integer> inv = new ArrayList<>(V);
+		{
+			ArrayList<Pair<Integer, Integer>> deg = new ArrayList<>(V);
+
+			ArrayList<Integer> rank = new ArrayList<>(V);
+			ArrayList<ArrayList<Integer>> new_adj = new ArrayList<>(V);
+
+			// khodam
+			for (int i = 0; i < V; i++) {
+				deg.add(null);
+				inv.add(null);
+				rank.add(null);
+				new_adj.add(new ArrayList<>());
+			}
+
+			// Order
+			// setting the degree of nodes in deg array
+			for (int v = 0; v < V; ++v) {
+				// We add a random value here to diffuse nearby vertices
+				// TODO: if everything is fine we can return this it was DOUBLE
+				deg.set(v, new Pair<Integer, Integer>(adj.get(v)
+						.size() /* + (double) (Math.random() / RAND_MAX) */, v));
+			}
+
+			// sorting degree 1st key: degree (desc) 2nd key: v (asc)
+			Collections.sort(deg, new Comparator<Pair<Integer, Integer>>() {
+				@Override
+				public int compare(Pair<Integer, Integer> o1, Pair<Integer, Integer> o2) {
+					if (o2.first != o1.first) {
+						return Integer.compare(o2.first, o1.first);
+					} else {
+						return Integer.compare(o1.second, o2.second);
+					}
+				}
+			});
+
+			// for test
+			// int tempF, tempS;
+			// tempF = deg.get(1).first;
+			// tempS = deg.get(1).second;
+			//
+			// deg.get(1).first = deg.get(2).first;
+			// deg.get(1).second = deg.get(2).second;
+			//
+			// deg.get(2).first = tempF;
+			// deg.get(2).second = tempS;
+			//
+			// tempF = deg.get(3).first;
+			// tempS = deg.get(3).second;
+			//
+			// deg.get(3).first = deg.get(4).first;
+			// deg.get(3).second = deg.get(4).second;
+			//
+			// deg.get(4).first = tempF;
+			// deg.get(4).second = tempS;
+
+			// inv keeps a map of what is previous id of current node id
+			for (int i = 0; i < V; ++i)
+				inv.set(i, deg.get(i).second);
+
+			// Relabel the vertex IDs
+			// it's opposite of inv. so inv: current -> previous
+			// rank: previous -> current
+			for (int i = 0; i < V; ++i)
+				rank.set(deg.get(i).second, i);
+
+			// now updating adj based on new ids
+			for (int v = 0; v < V; ++v) {
+				for (int i = 0; i < adj.get(v).size(); ++i) {
+					// we set the current new_adj based on current id get from
+					// rank.
+					// and add the value of current id by accessing to the
+					// previous adj
+					new_adj.get(rank.get(v)).add(rank.get(adj.get(v).get(i)));
+				}
+			}
+
+			// ArrayList<ArrayList<Integer>> temp = new ArrayList<>();
+			// temp.addAll(new_adj);
+			// new_adj.clear();
+			// new_adj.addAll(adj);
+			adj.clear();
+			adj.addAll(new_adj);
+		}
+
+		//
+		// Bit-parallel labeling
+		//
+		ArrayList<Boolean> usd = new ArrayList<>(V); // Used as root? (in new
+														// label)
+		{
+
+			ArrayList<Byte> tmp_d = new ArrayList<>(V);
+			ArrayList<Pair<Long, Long>> tmp_s = new ArrayList<>(V);
+			ArrayList<Integer> que = new ArrayList<>(V);
+
+			// khodam
+			for (int v = 0; v < V; v++) {
+				usd.add(false);
+				que.add(0);
+				tmp_d.add(INF8); // because of line 222 in C++;
+				tmp_s.add(new Pair<Long, Long>(0l, 0l));
+			}
+
+			ArrayList<Pair<Integer, Integer>> sibling_es = new ArrayList<>(E);
+			ArrayList<Pair<Integer, Integer>> child_es = new ArrayList<>(E);
+
+			// initializing sibling es and children es based on number of edges
+			for (int i = 0; i < E; i++) {
+				sibling_es.add(new Pair<Integer, Integer>(0, 0));
+				child_es.add(new Pair<Integer, Integer>(0, 0));
+			}
+
+			int r = 0; // potential root
+			// i_bpspt: which bit now?!
+			for (int i_bpspt = 0; i_bpspt < kNumBitParallelRoots; ++i_bpspt) {
+
+				// if already has been used as a root go to the next one
+				while (r < V && usd.get(r))
+					++r;
+
+				// if all the vertices has been used for root
+				// set all bpspt_d to INF8
+				// continue to the next bit!
+				if (r == V) {
+					for (int v = 0; v < V; ++v)
+						index_[v].bpspt_d[i_bpspt] = INF8;
+					continue;
+				}
+
+				// if we reach here with r, we want to consider it as a root
+				// and do the BFS.
+				// so, set it to the "used"
+				usd.set(r, true);
+
+				// (P[v], S−1r [v], S0r [v]) ← (∞, ∅, ∅) for all v ∈ V
+				// (P[r], S−1r [r], S0r [r]) ← (0, ∅, ∅)
+				for (int v = 0; v < V; v++) {
+
+					// the distance from r to v is inf now.
+					tmp_d.set(v, INF8); // because of line 222 in C++;
+					tmp_s.set(v, new Pair<Long, Long>(0l, 0l));
+				}
+
+				// TODO: que_t0: a temporary pointer to move
+				// TODO: que_t1: a temporary pointer to move.
+				// TODO: que_h: a pointer to the last added element in que
+				int que_t0 = 0, que_t1 = 0, que_h = 0;
+
+				// Enqueue r onto Q0
+				que.set(que_h++, r);
+
+				// the temp distance from r =0
+				tmp_d.set(r, (byte) 0);
+				que_t1 = que_h;
+
+				int ns = 0;
+
+				// what's the usage of vs? it's just being pushed!
+				ArrayList<Integer> vs = new ArrayList<>();
+
+				// sorting the neighbors of r
+				Collections.sort(adj.get(r));
+
+				// for each direct adjacent of current selected root node
+				for (int i = 0; i < adj.get(r).size(); ++i) {
+					int v = adj.get(r).get(i);
+
+					// if the adjacent node v didn't use as a root
+					if (!usd.get(v)) {
+
+						// add it to que and set it as a used!
+						usd.set(v, true);
+						que.set(que_h++, v);
+
+						// the temp distance from r to v is 1.
+						tmp_d.set(v, (byte) 1);
+
+						// TODO: very important
+						tmp_s.get(v).first = 1L << ns;
+
+						vs.add(v);
+
+						// at most b number of its neighbors
+						if (++ns == 32)
+							break;
+					}
+				}
+
+				for (int d = 0; que_t0 < que_h; ++d) {
+					int num_sibling_es = 0, num_child_es = 0;
+
+					for (int que_i = que_t0; que_i < que_t1; ++que_i) {
+
+						// Dequeue v from Q0.
+						int v = que.get(que_i);
+
+						// for all u ∈ NG(v) do
+						for (int i = 0; i < adj.get(v).size(); ++i) {
+
+							// target node v
+							int tv = adj.get(v).get(i);
+
+							// distance from v to t is d+1;
+							int td = d + 1;
+
+							// if already have a better distance for this tv
+							// from r.
+							// don't bother yourself!
+							if (d > tmp_d.get(tv))
+								;
+							// otherwise, if p[u]==p[v]
+							else if (d == tmp_d.get(tv)) {
+								if (v < tv) {
+									// E0 ← E0 ∪ {(v, u)}
+									// same distance from the root
+									sibling_es.set(num_sibling_es, new Pair<Integer, Integer>(v, tv));
+									++num_sibling_es;
+								}
+							} else {
+
+								// if P[u] = ∞ then
+								if (tmp_d.get(tv) == INF8) {
+
+									// Enqueue u onto Q1.
+									que.set(que_h++, tv);
+
+									// P[u] ← P[v] + 1 note that td is d+1 now
+									tmp_d.set(tv, (byte) td);
+								}
+
+								// E1 ← E1 ∪ {(v, u)}
+								child_es.set(num_child_es, new Pair<Integer, Integer>(v, tv));
+								++num_child_es;
+							}
+						}
+					}
+
+					// for all (v, u) ∈ E0 do
+					for (int i = 0; i < num_sibling_es; ++i) {
+
+						// S0r[u] ← S0r[u] ∪ S−1r[v]
+						int v = sibling_es.get(i).first, w = sibling_es.get(i).second;
+						tmp_s.get(v).second |= tmp_s.get(w).first;
+						tmp_s.get(w).second |= tmp_s.get(v).first;
+					}
+
+					// for all (v, u) ∈ E1 do
+					for (int i = 0; i < num_child_es; ++i) {
+
+						// S−1r [u] ← S−1r [u] ∪ S−1r [v]
+						// S0r [u] ← S0r [u] ∪ S0r [v]
+						int v = child_es.get(i).first, c = child_es.get(i).second;
+						tmp_s.get(c).first |= tmp_s.get(v).first;
+						tmp_s.get(c).second |= tmp_s.get(v).second;
+					}
+
+					// Q0 ← Q1 and Q1 ← ∅
+					que_t0 = que_t1;
+					que_t1 = que_h;
+				}
+
+				for (int v = 0; v < V; ++v) {
+					index_[inv.get(v)].bpspt_d[i_bpspt] = tmp_d.get(v);
+					index_[inv.get(v)].bpspt_s[i_bpspt][0] = tmp_s.get(v).first;
+					index_[inv.get(v)].bpspt_s[i_bpspt][1] = tmp_s.get(v).second & ~tmp_s.get(v).first;
+
+				}
+			}
+		}
+
+		// for test
+		// for (int v = 0; v < V; ++v) {
+		// for (int i_bpspt = 0; i_bpspt < 2; ++i_bpspt) {
+		// System.out.println(inv.get(v) + ", " +
+		// index_[inv.get(v)].bpspt_d[i_bpspt] + ", "
+		// + index_[inv.get(v)].bpspt_s[i_bpspt][0] + ", " +
+		// index_[inv.get(v)].bpspt_s[i_bpspt][1]);
+		// }
+		// }
+
+		//
+		// Pruned labeling
+		//
+		{
+			// Sentinel (V, INF8) is added to all the vertices
+			// a temporary index for maintaining int[] spt_v & byte[] spt_d
+			ArrayList<Pair<ArrayList<Integer>, ArrayList<Byte>>> tmp_idx = new ArrayList<>();
+
+			for (int v = 0; v < V; ++v) {
+				tmp_idx.add(new Pair<ArrayList<Integer>, ArrayList<Byte>>(new ArrayList<>(), new ArrayList<>()));
+			}
+			for (int v = 0; v < V; ++v) {
+				tmp_idx.get(v).first.add(V);
+				tmp_idx.get(v).second.add(INF8);
+			}
+
+			ArrayList<Boolean> vis = new ArrayList<>(V);
+			ArrayList<Integer> que = new ArrayList<>(V);
+			ArrayList<Byte> dst_r = new ArrayList<Byte>(V + 1);
+
+			for (int v = 0; v < V; ++v) {
+				vis.add(false);
+				que.add(null);
+			}
+			for (int v = 0; v <= V; ++v) {
+				dst_r.add(INF8);
+			}
+
+			for (int r = 0; r < V; ++r) {
+				// if we've already done a BFS from it, good, go to the next!
+				if (usd.get(r))
+					continue;
+
+				// fetch its actual index to use also information from bit
+				// parallel
+				Index_t idx_r = index_[inv.get(r)];
+
+				// TODO: should it really be filled with temporary values or the
+				// original idx_r?!
+				// create a temporary index initialized by temporary values!
+				Pair<ArrayList<Integer>, ArrayList<Byte>> tmp_idx_r = new Pair<ArrayList<Integer>, ArrayList<Byte>>(
+						tmp_idx.get(r).first, tmp_idx.get(r).second);
+
+				for (int i = 0; i < tmp_idx_r.first.size(); ++i) {
+					// from r to first.get(i) how much distance?!
+					dst_r.set(tmp_idx_r.first.get(i), tmp_idx_r.second.get(i));
+				}
+
+				int que_t0 = 0, que_t1 = 0, que_h = 0;
+
+				// Q ← a queue with only one element r
+				que.set(que_h++, r);
+				vis.set(r, true);
+				que_t1 = que_h;
+
+				boolean goToPruned = false;
+
+				for (int d = 0; que_t0 < que_h; ++d) {
+					for (int que_i = que_t0; que_i < que_t1; ++que_i) {
+
+						// Dequeue v from Q.
+						int v = que.get(que_i);
+
+						Pair<ArrayList<Integer>, ArrayList<Byte>> tmp_idx_v = new Pair<ArrayList<Integer>, ArrayList<Byte>>(
+								tmp_idx.get(v).first, tmp_idx.get(v).second);
+
+						Index_t idx_v = index_[inv.get(v)];
+
+						// Prefetch
+						// _mm_prefetch(&idx_v.bpspt_d[0], _MM_HINT_T0);
+						// _mm_prefetch(&idx_v.bpspt_s[0][0], _MM_HINT_T0);
+						// _mm_prefetch(&tmp_idx_v.first[0], _MM_HINT_T0);
+						// _mm_prefetch(&tmp_idx_v.second[0], _MM_HINT_T0);
+
+						// Prune?
+						if (usd.get(v))
+							continue;
+						for (int i = 0; i < kNumBitParallelRoots; ++i) {
+							int td = idx_r.bpspt_d[i] + idx_v.bpspt_d[i];
+							if (td - 2 <= d) {
+								// TODO: possibly due to being not unsigned may
+								// be it's less than zero
+								// but with the s
+								if ((idx_r.bpspt_s[i][0] & idx_v.bpspt_s[i][0]) > 0) {
+									td += -2;
+								} else if (((idx_r.bpspt_s[i][0] & idx_v.bpspt_s[i][1])
+										| (idx_r.bpspt_s[i][1] & idx_v.bpspt_s[i][0])) > 0) {
+									td += -1;
+								} else {
+
+									if (((idx_r.bpspt_s[i][0] & idx_v.bpspt_s[i][0]) < 0)
+											|| (((idx_r.bpspt_s[i][0] & idx_v.bpspt_s[i][1])
+													| (idx_r.bpspt_s[i][1] & idx_v.bpspt_s[i][0])) < 0)) {
+										System.err.println("negative!");
+									}
+
+									td += 0;
+								}
+
+								if (td <= d) {
+									goToPruned = true;// goto pruned;
+									break;
+								}
+							}
+						}
+						if (!goToPruned) {
+							for (int i = 0; i < tmp_idx_v.first.size(); ++i) {
+								int w = tmp_idx_v.first.get(i);
+								int td = tmp_idx_v.second.get(i) + dst_r.get(w);
+								if (td <= d) {
+									goToPruned = true;// goto pruned;
+									break;
+								}
+							}
+						}
+
+						if (!goToPruned) {
+							// Traverse
+							tmp_idx_v.first.set(tmp_idx_v.first.size() - 1, r);
+							tmp_idx_v.second.set(tmp_idx_v.second.size() - 1, (byte) d);
+							tmp_idx_v.first.add(V);
+							tmp_idx_v.second.add(INF8);
+							for (int i = 0; i < adj.get(v).size(); ++i) {
+								int w = adj.get(v).get(i);
+								if (!vis.get(w)) {
+									que.set(que_h++, w);
+									vis.set(w, true);
+								}
+							}
+						}
+						if (goToPruned) {
+							goToPruned = false;
+						}
+					}
+
+					que_t0 = que_t1;
+					que_t1 = que_h;
+				}
+
+				for (int i = 0; i < que_h; ++i)
+					vis.set(que.get(i), false);
+				for (int i = 0; i < tmp_idx_r.first.size(); ++i) {
+					dst_r.set(tmp_idx_r.first.get(i), INF8);
+				}
+				usd.set(r, true);
+			}
+
+			for (int v = 0; v < V; ++v) {
+				int k = tmp_idx.get(v).first.size();
+
+				index_[inv.get(v)].spt_v = new int[k];
+				index_[inv.get(v)].spt_d = new byte[k];
+
+				// for (int i = 0; i < k; ++i) {
+				// index_[inv.get(v)].spt_v.add(null);
+				// index_[inv.get(v)].spt_d.add(null);
+				// }
+
+				for (int i = 0; i < k; ++i)
+					index_[inv.get(v)].spt_v[i] = tmp_idx.get(v).first.get(i);
+				for (int i = 0; i < k; ++i)
+					index_[inv.get(v)].spt_d[i] = tmp_idx.get(v).second.get(i);
+				tmp_idx.get(v).first.clear();
+				tmp_idx.get(v).second.clear();
+			}
+		}
 	}
 
 	//
@@ -83,6 +562,61 @@ public class PrunedLandmarkLabeling {
 		return d;
 	}
 
+	public void StoreIndex(String indexName) throws Exception {
+
+		File fout = new File(indexName);
+		FileOutputStream fos = new FileOutputStream(fout);
+
+		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos, "UTF8"));
+
+		int num_v = num_v_, num_bpr = kNumBitParallelRoots;
+		bw.write("num_v:" + num_v);
+		bw.newLine();
+		bw.write("num_bpr:" + num_bpr);
+		bw.newLine();
+		bw.flush();
+
+		for (int v = 0; v < num_v_; ++v) {
+			// bw.write("v:" + v);
+			// bw.newLine();
+			Index_t idx = index_[v];
+
+			for (int i = 0; i < kNumBitParallelRoots; ++i) {
+				// int d = idx.bpspt_d[i];
+				// long a = idx.bpspt_s[i][0];
+				// long b = idx.bpspt_s[i][1];
+				// bw.write("d:" + d);
+				// bw.newLine();
+				// bw.write("a:" + a);
+				// bw.newLine();
+				// bw.write("b:" + b);
+				// bw.newLine();
+				bw.write(idx.bpspt_d[i] + ", " + idx.bpspt_s[i][0] + ", " + idx.bpspt_s[i][1]);
+				bw.newLine();
+
+			}
+
+			int s;
+			for (s = 1; idx.spt_v[s - 1] != num_v; ++s)
+				continue; // Find the sentinel
+			bw.write("s:" + s);
+			bw.newLine();
+			for (int i = 0; i < s; ++i) {
+				int l = idx.spt_v[i];
+				int d = idx.spt_d[i];
+				// bw.write("l:" + l);
+				// bw.newLine();
+				// bw.write("d:" + d);
+				// bw.newLine();
+				bw.write(idx.spt_v[i] + ", " + idx.spt_d[i]);
+				bw.newLine();
+			}
+			// bw.newLine();
+			// bw.newLine();
+		}
+		bw.close();
+	}
+
 	public boolean LoadIndex(String indexName) throws Exception {
 
 		double loadingStartTime = System.nanoTime();
@@ -116,8 +650,8 @@ public class PrunedLandmarkLabeling {
 			for (int i = 0; i < kNumBitParallelRoots; ++i) {
 				String[] lineArr = it.nextLine().trim().split(",");
 				idx.bpspt_d[i] = Byte.parseByte(lineArr[0]);
-				idx.bpspt_s[i][0] = Long.parseUnsignedLong(lineArr[1]);
-				idx.bpspt_s[i][1] = Long.parseUnsignedLong(lineArr[2]);
+				idx.bpspt_s[i][0] = Long.parseUnsignedLong(lineArr[1].trim());
+				idx.bpspt_s[i][1] = Long.parseUnsignedLong(lineArr[2].trim());
 
 				lineArr = null;
 
@@ -132,8 +666,8 @@ public class PrunedLandmarkLabeling {
 
 			for (int i = 0; i < s; ++i) {
 				String[] lineArr = it.nextLine().trim().split(",");
-				idx.spt_v[i] = Integer.parseInt(lineArr[0]);
-				idx.spt_d[i] = Byte.parseByte(lineArr[1]);
+				idx.spt_v[i] = Integer.parseInt(lineArr[0].trim());
+				idx.spt_d[i] = Byte.parseByte(lineArr[1].trim());
 				lineArr = null;
 			}
 		}
@@ -163,4 +697,112 @@ public class PrunedLandmarkLabeling {
 		return true;
 	}
 
+	// public boolean LoadIndex(String indexName) throws Exception {
+	//
+	// FileInputStream fis = new FileInputStream(indexName);
+	// BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+	//
+	// Integer num_v, num_bpr;
+	// num_v = Integer.parseInt(br.readLine().trim().split(":")[1]);
+	//
+	// num_bpr = Integer.parseInt(br.readLine().trim().split(":")[1]);
+	//
+	// num_v_ = num_v;
+	// if (kNumBitParallelRoots != num_bpr) {
+	// num_v_ = 0;
+	// br.close();
+	// return false;
+	// }
+	//
+	// index_ = new ArrayList<Index_t>(num_v_ + 1);
+	// for (int v = 0; v < num_v_; ++v) {
+	// index_.add(new Index_t(kNumBitParallelRoots));
+	// }
+	//
+	// for (int v = 0; v < num_v_; ++v) {
+	//
+	// if (v % 100000 == 0)
+	// System.out.println("v: " + v);
+	//
+	// String vLine = br.readLine();
+	// // System.out.println(vLine + " ? " + v);
+	// Index_t idx = index_.get(v);
+	// for (int i = 0; i < kNumBitParallelRoots; ++i) {
+	// String[] lineArr = br.readLine().trim().split(",");
+	// idx.bpspt_d[i] = Byte.parseByte(lineArr[0]);
+	// idx.bpspt_s[i][0] = Long.parseUnsignedLong(lineArr[1]);
+	// idx.bpspt_s[i][1] = Long.parseUnsignedLong(lineArr[2]);
+	//
+	// }
+	//
+	// Integer s = Integer.parseInt(br.readLine().trim().split(":")[1]);
+	//
+	// for (int i = 0; i < s; ++i) {
+	// index_.get(v).spt_v = new int[s];
+	// index_.get(v).spt_d = new byte[s];
+	// }
+	//
+	// for (int i = 0; i < s; ++i) {
+	// String[] lineArr = br.readLine().trim().split(",");
+	// idx.spt_v[i] = Integer.parseInt(lineArr[0]);
+	// idx.spt_d[i] = Byte.parseByte(lineArr[1]);
+	// }
+	// }
+	//
+	// br.close();
+	// return true;
+	// }
+
+	public static void main(String[] args) throws Exception {
+		//mhn
+		String index_path = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/citation/graph/prunedCitation.jin";
+		String graph_path = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/citation/graph/undirectedRels.tsv";
+
+		//xin
+//		String index_path = "/Users/zhangxin/AQPEQ/GraphExamples/GenTemTest/graph2/index_from_java";
+//		String graph_path = "/Users/zhangxin/AQPEQ/GraphExamples/GenTemTest/graph2/undirectedRels.tsv";
+		
+		ArrayList<Pair<Integer, Integer>> pairs = new ArrayList<Pair<Integer, Integer>>();
+		HashSet<Integer> Vs = new HashSet<Integer>();
+
+		PrunedLandmarkLabeling pl = new PrunedLandmarkLabeling(8);
+
+		FileInputStream fis = new FileInputStream(graph_path);
+
+		// Construct BufferedReader from InputStreamReader
+		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+
+		String line = null;
+		while ((line = br.readLine()) != null) {
+			String[] edgePoints = line.split("\t");
+			int src = Integer.parseInt(edgePoints[0]);
+			int dest = Integer.parseInt(edgePoints[1]);
+			Pair<Integer, Integer> pair = new Pair<Integer, Integer>(src, dest);
+			pairs.add(pair);
+			Vs.add(src);
+			Vs.add(dest);
+		}
+
+		br.close();
+
+		pl.ConstructIndex(pairs, Vs.size());
+
+		pl.StoreIndex(index_path);
+
+		//pl.LoadIndex(index_path);
+
+//		pl.printDist(1, 2);
+//		pl.printDist(2, 2);
+//		pl.printDist(11, 3);
+//		pl.printDist(3, 4);
+//		pl.printDist(11, 4);
+		pl.printDist(1, 6);
+
+	}
+
+	public void printDist(int i, int j) {
+		int[] num = new int[] { i, j };
+		System.out.println("i:" + num[0] + ", j:" + num[1] + ", dist:" + queryDistance(num[0], num[1]));
+
+	}
 }

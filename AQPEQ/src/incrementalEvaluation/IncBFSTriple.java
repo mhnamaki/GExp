@@ -10,6 +10,7 @@ public class IncBFSTriple {
 		this.setNodeId(nodeId);
 		this.setDistance(distance);
 		this.setCost(cost);
+		this.setParentBFSTriple(parentBFSTriple);
 	}
 
 	@Override

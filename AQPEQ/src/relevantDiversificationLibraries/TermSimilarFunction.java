@@ -6,13 +6,12 @@ import java.util.HashSet;
 import com.sleepycat.je.DatabaseException;
 
 import aqpeq.utilities.StringPoolUtility;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.NodeInfra;
 import graphInfra.RelationshipInfra;
 
 public class TermSimilarFunction {
-	static double allKeyword = Math.log((double) 1000000);// 222
+	// public double allKeyword = Math.log((double) 1000000);// 222
 
 	public static void main(String[] args) throws Exception {
 		// String strA = "Spanishmovie";
@@ -47,7 +46,6 @@ public class TermSimilarFunction {
 			sizeA = Math.log((double) neighborA.size());
 			sizeB = Math.log((double) neighborB.size());
 			neighborA.retainAll(neighborB);
-			sizeI = Math.log((double) neighborA.size());
 			if (sizeA > sizeB) {// sizeA is in numerator
 				numerator = sizeA - sizeI;
 				denominator = allKeyword - sizeB;
@@ -70,6 +68,12 @@ public class TermSimilarFunction {
 				gswd = numerator / denominator;
 			}
 		}
+
+//		System.out.println("gswd = " + gswd);
+//		System.out.println(strA + "; " + strB);
+//		System.out.println("numerator = " + numerator);
+//		System.out.println("denominator" + denominator);
+//		System.out.println();
 
 		return gswd;
 	}

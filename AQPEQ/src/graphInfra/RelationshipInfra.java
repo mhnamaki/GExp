@@ -3,6 +3,8 @@ package graphInfra;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import aqpeq.utilities.StringPoolUtility;
+
 public class RelationshipInfra {
 	public int relId;
 	public int sourceId;
@@ -44,7 +46,29 @@ public class RelationshipInfra {
 
 	@Override
 	public String toString() {
-		return " id:" + relId + " w:" + weight + " t:" + types;
+		String type = "";
+		int cnt = 1;
+		if(types!=null) {
+			int typeSize = types.size();
+			for (int typeId : types) {
+				try {
+					if (cnt < typeSize) {
+						type += StringPoolUtility.getStringOfId(typeId) + ", ";
+					} else {
+						type += StringPoolUtility.getStringOfId(typeId);
+					}
+					cnt++;
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}
+//		return " id:" + relId + " w:" + weight + " t:" + types;
+		//return " id:" + relId + " t:" + type;
+		return type;
+		//return " id:" + relId;
 	}
 
 	@Override

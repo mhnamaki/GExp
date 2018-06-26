@@ -12,7 +12,6 @@ import aqpeq.utilities.KWSUtilities;
 import aqpeq.utilities.StringPoolUtility;
 import aqpeq.utilities.Dummy.DummyFunctions;
 import aqpeq.utilities.Dummy.DummyProperties;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 
 public class GraphKWSExpand {
@@ -34,7 +33,7 @@ public class GraphKWSExpand {
 
 	public double w;
 	private int b;
-	private BerkleleyDB berkeleyDB;
+
 
 	public int visitedNodes = 0;
 	public int visitedKeywords = 0;
@@ -57,12 +56,12 @@ public class GraphKWSExpand {
 	// public int gundamId = -1;
 
 	public GraphKWSExpand(GraphInfraReaderArray graph, ArrayList<AnswerAsInput> topNAnswers, double delta, int b,
-			BerkleleyDB berkeleyDB, HashSet<Integer> initialKeywords) throws Exception {
+			 HashSet<Integer> initialKeywords) throws Exception {
 		this.topNAnswers = topNAnswers;
 		this.delta = delta;
 		this.graph = graph;
 		this.initialKeywords = initialKeywords;
-		this.berkeleyDB = berkeleyDB;
+
 
 		for (int m = 0; m < topNAnswers.size(); m++) {
 			this.w += topNAnswers.get(m).getCost();

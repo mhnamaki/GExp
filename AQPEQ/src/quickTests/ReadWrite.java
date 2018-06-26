@@ -13,12 +13,11 @@ public class ReadWrite {
 
 	public static void main(String[] args) throws IOException {
 
-		int rewrite = 13000000;
+		int rewrite = 8000000;
 
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 1; i++) {
 
-			
-			String relationshipDir = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/dbp/dbpGraphInfra/graph/dbp/";
+			String relationshipDir = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/citation/graph/";
 
 			FileInputStream fis = new FileInputStream(relationshipDir + "relationships.in");
 			BufferedReader br = new BufferedReader(new InputStreamReader(fis));

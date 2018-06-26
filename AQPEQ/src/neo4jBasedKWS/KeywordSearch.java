@@ -28,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import aqpeq.utilities.Dummy;
 import aqpeq.utilities.Dummy.DummyFunctions;
-import dataset.BerkeleyDB.BerkleleyDB;
 import string.transformations.TransformationObject;
 import aqpeq.utilities.TreeNode;
 import aqpeq.utilities.Visualizer;

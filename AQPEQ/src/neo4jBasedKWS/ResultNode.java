@@ -17,6 +17,14 @@ public class ResultNode {
 	public String toString() {
 		return this.nodeId + ":" + this.labels;
 	}
+	
+	public String toString2() {
+		return this.nodeId + "";
+	}
+	
+	public static String getLabel() {
+		return "Label";
+	}
 
 	@Override
 	public int hashCode() {

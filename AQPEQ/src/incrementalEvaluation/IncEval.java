@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.PriorityQueue;
 import aqpeq.utilities.Dummy.DummyProperties;
 import aqpeq.utilities.Dummy.DummyProperties.KWSSetting;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import queryExpansion.AnswerAsInput;
 
@@ -54,7 +53,7 @@ public class IncEval {
 		if (kwsSetting == KWSSetting.SUBGRAPH) {
 			for (int i = 0; i < n; i++) {
 
-				lastTripleOfKeywordMatchToTarget[i] = new IncBFSTriple(-1, null, 0, 0d);
+				lastTripleOfKeywordMatchToTarget[i] = new IncBFSTriple(bestKeywordInfo.nodeId[i], null, 0, 0d);
 				for (int contentNodeId : topNAnswers.get(i).getContentNodes()) {
 					lastTripleOfKeywordMatchToTarget[i].setCost(lastTripleOfKeywordMatchToTarget[i].getCost()
 							+ prunedLandmarkLabeling.queryDistance(bestKeywordInfo.nodeId[i], contentNodeId));

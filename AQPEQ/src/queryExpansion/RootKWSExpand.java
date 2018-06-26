@@ -7,17 +7,20 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
 
 import aqpeq.utilities.KWSUtilities;
 import aqpeq.utilities.Dummy.DummyFunctions;
 import aqpeq.utilities.Dummy.DummyProperties;
-import dataset.BerkeleyDB.BerkleleyDB;
+import bicliqueResearch.Tuple;
+import bicliqueResearch.TupleComparator;
 import graphInfra.GraphInfraReaderArray;
+import graphInfra.NodeInfra;
 
 public class RootKWSExpand {
 
 	// top-n answer trees A discovered by KWS algorithm A,
-	ArrayList<AnswerAsInput> topNAnswers;
+	public ArrayList<AnswerAsInput> topNAnswers;
 
 	// quality bound
 	double delta;
@@ -31,9 +34,11 @@ public class RootKWSExpand {
 	// kCost
 	HashMap<Integer, CostNodePair[]> costOfAKeywordToAnAnswer;
 
+	// top-n answer
+	public HashMap<Integer, HashMap<Integer, Double>> answerKeywordMap;
+
 	public double w;
 	private int b;
-	private BerkleleyDB berkeleyDB;
 
 	public int visitedNodes = 0;
 	public int visitedKeywords = 0;
@@ -51,7 +56,7 @@ public class RootKWSExpand {
 
 	public CostAndNodesOfAnswersPair bestKeywordInfo;
 
-	private HashSet<Integer> keywordsSet;
+	public HashSet<Integer> keywordsSet;
 
 	public double getKeywordsDuration = 0d;
 
@@ -129,7 +134,7 @@ public class RootKWSExpand {
 					if (keywordsOfV == null) {
 						keywordsOfV = new HashSet<Integer>();
 					}
-					
+
 					for (Integer k_ : keywordsOfV) {
 
 						// if i > 1 and k′ < kCost then continue
@@ -274,6 +279,59 @@ public class RootKWSExpand {
 		bestKeywordInfo = estimatedWeightOfSuggestedKeywordMap.get(lowestWeightSuggestedKeywordId);
 
 		return estimatedWeightOfSuggestedKeywordMap;
+	}
+
+	// output: answer reach to keyword
+	public void expandForBiClique() throws Exception {
+		// key: answer id, value: Map(keyword, length)
+		answerKeywordMap = new HashMap<Integer, HashMap<Integer, Double>>();
+
+		for (int i = 0; i < topNAnswers.size(); i++) {
+
+			int rootId = topNAnswers.get(i).getRootNodeId();
+
+			HashMap<Integer, Double> keywordDistance = new HashMap<Integer, Double>();
+
+			// generate sssp from root node of current answer
+			SSSPIterator sssp = new SSSPIterator(graph, rootId, b);
+			HashSet<Integer> visitedNodesSet = new HashSet<Integer>();
+			visitedNodesSet.add(rootId);
+
+			// extract keywords in root node
+			HashSet<Integer> rootKeywords = DummyFunctions.getKeywords(graph, rootId);
+			for (int keywordId : rootKeywords) {
+				keywordDistance.putIfAbsent(keywordId, 0.0);
+			}
+
+			while (hasNextNode(sssp)) {
+				SSSPNode currentNode = sssp.getNextSSSPNode();
+				NodeInfra curNode = currentNode.node;
+				if (!visitedNodesSet.contains(curNode.nodeId)) {
+					double distanceFromOriginId = currentNode.distanceFromOriginId;
+					// extract keywords in current node
+					HashSet<Integer> currentKeywords = DummyFunctions.getKeywords(graph, curNode.nodeId);
+					
+					//put them with distance
+					for (int keywordId : currentKeywords) {
+						if (!keywordsSet.contains(keywordId)){
+							keywordDistance.putIfAbsent(keywordId, distanceFromOriginId);
+						}
+					}
+					visitedNodesSet.add(curNode.nodeId);
+				}
+			}
+
+			answerKeywordMap.put(i, keywordDistance);
+		}
+
+	}
+
+	public boolean hasNextNode(SSSPIterator sssp) {
+		if (sssp.peekDist() <= b) {
+			return true;
+		}
+
+		return false;
 	}
 
 	// public void updateNumberOfNodesAndEdgesInGr() throws Exception {

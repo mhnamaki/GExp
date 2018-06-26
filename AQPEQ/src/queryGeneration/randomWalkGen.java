@@ -16,7 +16,6 @@ import aqpeq.utilities.Dummy.DummyFunctions;
 import aqpeq.utilities.Dummy.DummyProperties;
 import aqpeq.utilities.MapUtil;
 import aqpeq.utilities.StringPoolUtility;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.NodeInfra;
 import queryExpansion.BFSTriple;

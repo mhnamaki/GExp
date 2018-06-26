@@ -20,7 +20,7 @@ import aqpeq.utilities.TreeNode;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.RelationshipInfra;
 
-public class ResultTree {
+public class ResultTree implements Cloneable{
 
 	public Double cost = 0d;
 	public ListenableUndirectedGraph<ResultNode, RelationshipInfra> anOutputTree = new ListenableUndirectedGraph<ResultNode, RelationshipInfra>(
@@ -28,6 +28,7 @@ public class ResultTree {
 	public ResultNode rootNode;
 	private HashMap<String, HashSet<Integer>> originsOfKeywords;
 	private HashMap<Integer, ArrayList<Integer>> pathOfRootToTheOrigin;
+	public HashMap<Integer, ResultNode> createdTreeNode = new HashMap<Integer, ResultNode>();
 
 	/**
 	 * resultTree - creates a tree of all the results from the cross product
@@ -93,7 +94,6 @@ public class ResultTree {
 		this.originsOfKeywords = originsOfKeywords;
 		this.pathOfRootToTheOrigin = pathOfRootToTheOrigin;
 
-		HashMap<Integer, ResultNode> createdTreeNode = new HashMap<Integer, ResultNode>();
 		HashMap<String, ResultNode> resultNodeOfKeyword = new HashMap<String, ResultNode>();
 
 		boolean rootHasInit = false;

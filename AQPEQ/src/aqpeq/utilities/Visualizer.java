@@ -28,7 +28,7 @@ import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
 import com.mxgraph.swing.mxGraphComponent;
 
 import aqpeq.utilities.Dummy.DummyFunctions;
-import dataset.BerkeleyDB.BerkleleyDB;
+
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.NodeInfra;
 import graphInfra.RelationshipInfra;
@@ -45,7 +45,7 @@ public class Visualizer {
 	}
 
 	private static void createAndShowGui(LinkedList<ResultTree> fullOutputsQueue, GraphInfraReaderArray graph,
-			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap, BerkleleyDB berkeleyDB,
+			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap,
 			Collection<String> keywords) throws Exception {
 
 		JFrame frame;
@@ -223,21 +223,21 @@ public class Visualizer {
 	}
 
 	public static void visualizeOutput(LinkedList<ResultTree> fullOutputsQueue, GraphInfraReaderArray graph,
-			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap, BerkleleyDB berkeleyDB,
+			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap,
 			Collection<String> keywords) throws Exception {
-		createAndShowGui(fullOutputsQueue, graph, estimatedWeightOfSuggestedKeywordMap, berkeleyDB, keywords);
+		createAndShowGui(fullOutputsQueue, graph, estimatedWeightOfSuggestedKeywordMap, keywords);
 	}
 
 	public static void visualizePairwise(LinkedList<PairwiseAnswer> fullOutputsQueue, GraphInfraReaderArray graph,
-			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap, BerkleleyDB berkeleyDB,
+			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap,
 			ArrayList<String> keywords) throws Exception {
 		// when visualizeOutput, we add estimatedWeightOfSuggestedKeywordMap
-		createAndShowPairwise(fullOutputsQueue, graph, estimatedWeightOfSuggestedKeywordMap, berkeleyDB, keywords);
+		createAndShowPairwise(fullOutputsQueue, graph, estimatedWeightOfSuggestedKeywordMap, keywords);
 
 	}
 
 	private static void createAndShowPairwise(LinkedList<PairwiseAnswer> fullOutputsQueue, GraphInfraReaderArray graph,
-			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap, BerkleleyDB berkeleyDB,
+			HashMap<Integer, CostAndNodesOfAnswersPair> estimatedWeightOfSuggestedKeywordMap,
 			ArrayList<String> keywords) {
 		// TODO: showing pairwise results including the query suggestion part
 	}

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import aqpeq.utilities.StringPoolUtility;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.NodeInfra;
 import queryExpansion.AnswerAsInput;
@@ -16,8 +15,8 @@ public class ComputingRelevancyScore {
 	static HashMap<Integer, HashSet<Integer>> nodeIDsMap = new HashMap<Integer, HashSet<Integer>>();
 	static HashSet<Integer> allNodeIdOfTopNAnswers = new HashSet<Integer>();
 	static boolean wrtToAnswers;
-	public double maxTfIdf = 0;
-	public double maxImportance = 0;
+	public double maxTfIdf = Double.MIN_VALUE;
+	public double maxImportance = Double.MIN_VALUE;
 
 	// input: given top-n answers, graph, estimatedWeightOfSuggestedKeywordMap,
 	// etc.
@@ -112,7 +111,7 @@ public class ComputingRelevancyScore {
 			// tdIdf = tf * idf
 			tfIdf = tf * idf;
 			if (tfIdf > maxTfIdf) {
-				maxTfIdf = maxTfIdf;
+				maxTfIdf = tfIdf;
 			}
 
 			// Update cost

@@ -1,200 +1,222 @@
 package dataset.graphSampler;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.RelationshipType;
 
 import aqpeq.utilities.Dummy.DummyFunctions;
+import aqpeq.utilities.Dummy.DummyProperties;
+import aqpeq.utilities.StringPoolUtility;
+import graphInfra.GraphInfraReaderArray;
+import graphInfra.NodeInfra;
+import graphInfra.RelationshipInfra;
 
 public class imdbSampler {
 
-	String dataGraphPath = "/Users/zhangxin/Desktop/IMDB/neo4jImdb";
-	String keyword = "Ahora toca";
-	int hopBound = 2;
+	private static String graphInfraPath = "/Users/zhangxin/Desktop/DBP/untitled folder/";
+	private static String dataset = "dep";
+	final String verticesFileName = "Vertices.in";
+	final String relationshipsFileName = "Relationships.in";
+	private static String keywords = "Jessica;Chastain,Taylor;Swift,AnneHathaway";
+	//private static String keywords = "western;philosophy";
 
-	int maxNumberOfRels = 1000;
-	int maxNumberOfNodes = 1000;
+	GraphInfraReaderArray graph;
+	ArrayList<NodeInfra> nodeOfNodeId = new ArrayList<NodeInfra>();
+	ArrayList<RelationshipInfra> relationOfRelId = new ArrayList<RelationshipInfra>();
+	HashMap<Integer, HashSet<Integer>> nodeIdsOfToken = new HashMap<Integer, HashSet<Integer>>();
+	HashSet<RelationshipInfra> edgeSet = new HashSet<RelationshipInfra>();
+	HashSet<NodeInfra> nodeSet = new HashSet<NodeInfra>();
+	HashMap<Integer, Integer> oldIdToNewId = new HashMap<Integer, Integer>();
+	static int numberOfEdge = 40;
+	
+	HashMap<Integer, String> nodeLine = new HashMap<Integer, String>();
+	HashMap<Integer, String> edgeLine = new HashMap<Integer, String>();
 
-	public static void main(String[] args) throws Exception {
-		imdbSampler b = new imdbSampler();
-		b.run();
+	public imdbSampler() {
 
 	}
 
-	private void run() throws Exception {
-
-		File storeDir = new File(dataGraphPath);
-		GraphDatabaseService dataGraph = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(storeDir)
-				.setConfig(GraphDatabaseSettings.pagecache_memory, "1g")
-				// .setConfig(GraphDatabaseSettings.allow_store_upgrade, "true")
-				.newGraphDatabase();
-
-		System.out.println("dataset:" + dataGraphPath);
-
-		Transaction tx1 = dataGraph.beginTx();
-
-		HashSet<Node> keywordNodesSet = new HashSet<Node>();
-		for (Node node : dataGraph.getAllNodes()) {
-			for (String propKey : node.getPropertyKeys()) {
-				if (node.getProperties(propKey).containsValue(keyword)) {
-					keywordNodesSet.add(node);
-				}
-			}
-//			for (Label lbl : node.getLabels()) {
-//				if (lbl.name().toLowerCase().contains(keyword)) {
-//					keywordNodesSet.add(node);
-//				}
-//			}
-		}
-		tx1.success();
-		tx1.close();
-		tx1 = dataGraph.beginTx();
-
-		System.out.println("keywordNodesSet size:" + keywordNodesSet.size());
-
-		LinkedList<NodeWithInfo> bfsQueue = new LinkedList<NodeWithInfo>();
-		HashSet<Node> visitedNode = new HashSet<Node>();
-		HashSet<Relationship> visitedRel = new HashSet<Relationship>();
-
-		for (Node node : keywordNodesSet) {
-			bfsQueue.add(new NodeWithInfo(node, 0));
-		}
-		tx1.success();
-		tx1.close();
-		tx1 = dataGraph.beginTx();
-
-		while (!bfsQueue.isEmpty()) {
-			NodeWithInfo currentNode = bfsQueue.poll();
-			visitedNode.add(currentNode.node);
-
-			if (currentNode.stepsFromRoot < hopBound) {
-				if (currentNode.node.getDegree() > 1000) {
-					System.out.println("degree:" + currentNode.node.getDegree());
-					continue;
-				}
-				for (Relationship rel : currentNode.node.getRelationships()) {
-					if (!visitedNode.contains(rel.getOtherNode(currentNode.node))) {
-						bfsQueue.add(
-								new NodeWithInfo(rel.getOtherNode(currentNode.node), currentNode.stepsFromRoot + 1));
-						visitedRel.add(rel);
-					}
-
-					if (visitedRel.size() > maxNumberOfRels || visitedNode.size() > maxNumberOfNodes) {
-						break;
-					}
-				}
-				tx1.success();
-				tx1.close();
-				tx1 = dataGraph.beginTx();
-			}
-
-			tx1.success();
-			tx1.close();
-			tx1 = dataGraph.beginTx();
-			System.out.println("bfsQueue.size:" + bfsQueue.size());
-
-			if (visitedRel.size() > maxNumberOfRels || visitedNode.size() > maxNumberOfNodes) {
-				break;
+	public static void main(String[] args) throws Exception {
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].equals("-dataGraph")) {
+				graphInfraPath = args[++i];
+			} else if (args[i].equals("-dataset")) {
+				dataset = args[++i];
+			} else if (args[i].equals("-numberOfEdge")) {
+				numberOfEdge = Integer.parseInt(args[++i]);
 			}
 		}
 
-		System.out.println("after bfs");
-		tx1.success();
-		System.out.println("after success");
-		tx1.close();
-		System.out.println("after close");
-		dataGraph = null;
+		DummyProperties.withProperties = true;
+		DummyProperties.readRelType = true;
+		DummyProperties.debugMode = true;
+		imdbSampler sampler = new imdbSampler();
+		sampler.loadGraph();
+		sampler.sample();
+		sampler.readAndWriteVertices();
+		sampler.readAndWriteRelationships();
 
-		System.out.println("after shut down first G");
+	}
 
-		System.out.println("visited nodes: " + visitedNode.size());
-		System.out.println("visited rels: " + visitedRel.size());
-		System.out.println("after bfs");
+	public void loadGraph() throws Exception {
+		boolean addBackward = false;
+		graph = new GraphInfraReaderArray(graphInfraPath, addBackward);
+		graph.read();
+		nodeOfNodeId = graph.nodeOfNodeId;
+		relationOfRelId = graph.relationOfRelId;
+		nodeIdsOfToken = graph.indexInvertedListOfTokens(graph);
+		
 
-		String newPath = DummyFunctions.copyDataSet(dataGraphPath, 1);
-		File storeDir2 = new File(newPath);
-		GraphDatabaseService newDataGraph = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(storeDir2)
-				.setConfig(GraphDatabaseSettings.pagecache_memory, "8g")
-				// .setConfig(GraphDatabaseSettings.allow_store_upgrade, "true")
-				.newGraphDatabase();
+		String nodePath = graphInfraPath + "/vertices.in";
+		readNode(nodePath);
+		
+		String edgePath = graphInfraPath + "/relationships.in";
+		readEdge(edgePath);
+	}
 
-		System.out.println("after initing new one");
-		Transaction tx2 = newDataGraph.beginTx();
+	public void sample() throws Exception {
+		
+		int startNodeId = 1;
+		NodeInfra startNode = nodeOfNodeId.get(startNodeId);
 
-		int cnt = 0;
+		while (edgeSet.size() < numberOfEdge) {
 
-		for (Relationship rel : newDataGraph.getAllRelationships()) {
-			if (!visitedRel.contains(rel)) {
-				rel.delete();
-				cnt++;
+			HashSet<Integer> relIds = new HashSet<>(startNode.outgoingRelIdOfSourceNodeId.values());
 
-				if ((cnt % 10000) == 0) {
-					tx2.success();
-					tx2.close();
-					tx2 = newDataGraph.beginTx();
-					System.out.println("cnt: " + cnt);
-				}
+			for (int relId : relIds) {
+				RelationshipInfra rel = relationOfRelId.get(relId);
+				edgeSet.add(rel);
+				nodeSet.add(nodeOfNodeId.get(rel.sourceId));
+				nodeSet.add(nodeOfNodeId.get(rel.destId));
 			}
+
+			startNodeId++;
+			startNode = nodeOfNodeId.get(startNodeId);
 
 		}
 
-		System.out.println("after deleting rels");
-		for (Node node : newDataGraph.getAllNodes()) {
-			if (!visitedNode.contains(node)) {
-				node.delete();
-				cnt++;
+		System.out.println("node size = " + nodeSet.size());
+		System.out.println("edge size = " + edgeSet.size());
 
-				if ((cnt % 10000) == 0) {
-					tx2.success();
-					tx2.close();
-					tx2 = newDataGraph.beginTx();
-					System.out.println("cnt: " + cnt);
-				}
-			}
+	}
+
+	private void readAndWriteRelationships() throws Exception {
+
+		Writer bw = new BufferedWriter(
+				new OutputStreamWriter(new FileOutputStream(dataset + relationshipsFileName), "UTF-8"));
+
+		int relId = 0;
+		for (RelationshipInfra rel : edgeSet) {
+			bw.write(relId + "#" + oldIdToNewId.get(rel.sourceId) + "#" + oldIdToNewId.get(rel.destId) + "#"
+					+ edgeLine.get(rel.relId) + "\n");
+
+			relId++;
 		}
-		System.out.println("after deleting nodes");
-		for (Node node : newDataGraph.getAllNodes()) {
 
-			if (node.getDegree() == 0) {
-				cnt++;
-				node.delete();
-				if ((cnt % 10000) == 0) {
-					tx2.success();
-					tx2.close();
-					tx2 = newDataGraph.beginTx();
-					System.out.println("cnt: " + cnt);
-				}
-			}
+		bw.close();
+
+	}
+
+	private void readAndWriteVertices() throws Exception {
+
+		Writer bw = new BufferedWriter(
+				new OutputStreamWriter(new FileOutputStream(dataset + verticesFileName), "UTF-8"));
+
+		int nodeId = 0;
+		
+		for (NodeInfra node : nodeSet) {
+			bw.write(nodeId + "#1#1#" + nodeLine.get(node.nodeId) + "\n");
+
+			oldIdToNewId.put(node.nodeId, nodeId);
+
+			nodeId++;
 		}
-		System.out.println("after deleting nodes with zero degree");
+		
 
-		tx2.success();
-		tx2.close();
+		bw.close();
 
-		System.out.println("program is finished!");
-		newDataGraph.shutdown();
+	}
+	
+	public void readNode(String filePath) {
+
+		File file = new File(filePath);
+		InputStreamReader reader;
+		try {
+			reader = new InputStreamReader(new FileInputStream(file));
+
+			BufferedReader br = new BufferedReader(reader);
+			String line = "";
+			while ((line = br.readLine()) != null) {
+
+				int index = line.indexOf("#");
+				int nodeId = Integer.parseInt(line.substring(0, index));
+				line = line.substring(index + 1);
+				int indexI = line.indexOf("#");
+				line = line.substring(indexI + 1);
+				int indexO = line.indexOf("#");
+				line = line.substring(indexO + 1);
+				nodeLine.put(nodeId, line);
+			}
+
+			br.close();
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+
+	}
+	
+	public void readEdge(String filePath) {
+
+		File file = new File(filePath);
+		InputStreamReader reader;
+		try {
+			reader = new InputStreamReader(new FileInputStream(file));
+
+			BufferedReader br = new BufferedReader(reader);
+			String line = "";
+			while ((line = br.readLine()) != null) {
+
+				int index = line.indexOf("#");
+				int nodeId = Integer.parseInt(line.substring(0, index));
+				line = line.substring(index + 1);
+				int indexSr = line.indexOf("#");
+				line = line.substring(indexSr + 1);
+				int indexDes = line.indexOf("#");
+				line = line.substring(indexDes + 1);
+				
+				edgeLine.put(nodeId, line);
+			}
+
+			br.close();
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 
 	}
 
 }
-
-//class NodeWithInfo {
-//	Node node;
-//	int stepsFromRoot;
-//
-//	public NodeWithInfo(Node node, int stepsFromRoot) {
-//		this.node = node;
-//		this.stepsFromRoot = stepsFromRoot;
-//	}
-//}
-
-

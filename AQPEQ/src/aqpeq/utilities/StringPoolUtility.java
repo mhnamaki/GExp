@@ -1,66 +1,88 @@
 package aqpeq.utilities;
 
 import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
 public class StringPoolUtility {
 
-	private static BiMap<String, Integer> stringPool = HashBiMap.create();
-	private static int autoIncrementId = 0;
+    private static BiMap<String, Integer> stringPool = HashBiMap.create();
+    private static int autoIncrementId = 0;
 
-	public static int insertIntoStringPool(String str) {
+    public static void reInit() {
+        stringPool.clear();
+        stringPool = HashBiMap.create();
+        autoIncrementId = 0;
+    }
 
-		if (stringPool.containsKey(str)) {
-			return stringPool.get(str);
-		}
+    public static BiMap<String, Integer> getStringPool() {
+        return stringPool;
+    }
 
-		stringPool.put(str, ++autoIncrementId);
 
-		return autoIncrementId;
+    public static int insertIntoStringPool(String str) {
 
-	}
+        if (stringPool.containsKey(str)) {
+            return stringPool.get(str);
+        }
 
-	public static int getIdOfStringFromPool(String str) throws Exception {
+        stringPool.put(str, ++autoIncrementId);
 
-		if (stringPool.containsKey(str)) {
-			return stringPool.get(str);
-		}
+        return autoIncrementId;
 
-		throw new Exception("no string  " + str + " exists in string pool");
-	}
+    }
 
-	public static boolean tokenExistsInPool(String str) throws Exception {
+    public static int getIdOfStringFromPool(String str) throws Exception {
 
-		return stringPool.containsKey(str);
+        if (stringPool.containsKey(str)) {
+            return stringPool.get(str);
+        }
 
-	}
+        throw new Exception("no string  " + str + " exists in string pool");
+    }
 
-	public static String getStringOfId(int id) throws Exception {
+    public static boolean tokenExistsInPool(String str) throws Exception {
 
-		if (stringPool.inverse().containsKey(id)) {
-			return stringPool.inverse().get(id);
-		}
+        return stringPool.containsKey(str);
 
-		throw new Exception("no such id " + id + " exists in string pool");
-	}
+    }
 
-	public static HashSet<String> getStringOfIds(HashSet<Integer> ids) throws Exception {
+    public static String getStringOfId(int id) throws Exception {
 
-		HashSet<String> lbls = new HashSet<String>();
+        if (stringPool.inverse().containsKey(id)) {
+            return stringPool.inverse().get(id);
+        }
 
-		for (int id : ids) {
-			if (stringPool.inverse().containsKey(id)) {
-				lbls.add(stringPool.inverse().get(id));
-			}
-		}
+        throw new Exception("no such id " + id + " exists in string pool");
+    }
 
-		return lbls;
-	}
+    public static HashSet<String> getStringOfIds(Set<Integer> ids) throws Exception {
 
-	public static int getCurrentAutoIncrement() {
-		return autoIncrementId;
-	}
+        HashSet<String> lbls = new HashSet<String>();
+
+        for (int id : ids) {
+            if (stringPool.inverse().containsKey(id)) {
+                lbls.add(stringPool.inverse().get(id));
+            }
+        }
+
+        return lbls;
+    }
+
+    public static int getCurrentAutoIncrement() {
+        return autoIncrementId;
+    }
+
+    public static String getStringOfTokenIds(HashSet<Integer> tokens) throws Exception {
+        String str = "";
+
+        for (Integer tokenId : tokens) {
+            str += StringPoolUtility.getStringOfId(tokenId) + ", ";
+        }
+
+        return str;
+    }
 
 }

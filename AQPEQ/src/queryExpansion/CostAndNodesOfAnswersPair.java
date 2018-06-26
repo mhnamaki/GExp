@@ -3,10 +3,14 @@ package queryExpansion;
 public class CostAndNodesOfAnswersPair {
 	public int[] nodeId;
 	public double cost;
-
-	private double importance;
 	
-	private double tfIdf;
+	public int keywordIndex;
+
+	private double importance=0;
+	
+	private double tfIdf=0;
+	
+	public double FScore = 0;
 	
 	public CostAndNodesOfAnswersPair(int[] nodeId, double cost) {
 		this.nodeId = nodeId;

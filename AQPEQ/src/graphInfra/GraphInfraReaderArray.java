@@ -3,10 +3,14 @@ package graphInfra;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.TreeMap;
 
+import aqpeq.utilities.Dummy;
 import aqpeq.utilities.Dummy.DummyFunctions;
 import aqpeq.utilities.Dummy.DummyProperties;
 import aqpeq.utilities.StringPoolUtility;
@@ -15,6 +19,7 @@ public class GraphInfraReaderArray {
 
 	public String verticesFileName = "vertices.in";
 	public String relationshipFileName = "relationships.in";
+	public int tempMaxRelIdForDemo;
 	// public String graphInfraPath =
 	// "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/amazon/amazonGraphInfra/";
 	// public String graphInfraPath = "/Users/zhangxin/Desktop/Summer/newDBP/";
@@ -25,6 +30,11 @@ public class GraphInfraReaderArray {
 
 	public HashMap<Integer, HashSet<Integer>> nodeIdsOfToken;
 	public HashMap<Integer, HashSet<Integer>> relIdsOfType;
+	
+	public HashMap<Integer, HashSet<Integer>> urlIdsOfLabel;
+	public HashMap<Integer, HashSet<Integer>> labelIdsIdsOfLabel;
+	
+	//public HashMap<Integer, Integer> freuencyOfTokens = new HashMap<Integer, Integer>();
 
 	public int maxNodeId = 0;
 	public int maxRelId = 0;
@@ -36,21 +46,55 @@ public class GraphInfraReaderArray {
 		// String graphInfraPath =
 		// "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/amazon/amazonGraphInfra/";
 		// String graphInfraPath = "/Users/zhangxin/Desktop/Summer/newDBP/";
-		String graphInfraPath = "/Users/mnamaki/AQPEQ/GraphExamples/highInDegree/graph";
-		GraphInfraReaderArray gir = new GraphInfraReaderArray(graphInfraPath, true);
+		String graphInfraPath = "/Users/mnamaki/Documents/Education/PhD/Summer2017/AQEQ/Datasets/dbp/dbpGraphInfra/graph/dbp";
+		DummyProperties.withProperties = false;
+		GraphInfraReaderArray gir = new GraphInfraReaderArray(graphInfraPath, false);
 		gir.read();
 		gir.indexInvertedListOfTokens(gir);
 
-		// for (RelationshipInfra rel : gir.relationOfRelId) {
-		// System.out.println(rel.sourceId + "-->" + rel.destId);
-		// System.out.println(
-		// gir.nodeOfNodeId.get(rel.sourceId) + "--" + rel.weight + "-->" +
-		// gir.nodeOfNodeId.get(rel.destId));
+		// double sum = 0d;
+		//
+
+		HashSet<Integer> nodeSet = new HashSet<Integer>();
+		for (NodeInfra node : gir.nodeOfNodeId) {
+			if (node.tokens != null) {
+				int candidate = 0;
+				for (int tokenId : node.tokens) {
+
+					String str = StringPoolUtility.getStringOfId(tokenId);
+					if (str.toLowerCase().contains("restaurant")) {
+						nodeSet.add(node.nodeId);
+					}
+
+				}
+				// if(candidate >=2){
+				// System.out.print(node.nodeId +",");
+				// //System.out.println(node.getOutgoingRelIdOfSourceNodeId());
+				// }
+			}
+		}
+
+		//
+		// System.out.println("avg:" + (sum / (double)
+		// gir.nodeOfNodeId.size()));
+
+		// TreeMap<Integer, Integer> freqOfTokenId = new TreeMap<Integer,
+		// Integer>();
+		// for (int tokenId : gir.nodeIdsOfToken.keySet()) {
+		// freqOfTokenId.putIfAbsent(gir.nodeIdsOfToken.get(tokenId).size(), 0);
+		// freqOfTokenId.put(gir.nodeIdsOfToken.get(tokenId).size(),
+		// freqOfTokenId.get(gir.nodeIdsOfToken.get(tokenId).size()) + 1);
 		// }
+		//
+		// for (int key : freqOfTokenId.navigableKeySet())
+		// System.out.println(key + "," + freqOfTokenId.get(key));
 
 	}
 
 	public GraphInfraReaderArray(String graphInfraPath, boolean addBackward) {
+		StringPoolUtility.reInit();
+		Dummy.DummyProperties.stopwordsSet = null;
+
 		if (!graphInfraPath.endsWith("/")) {
 			graphInfraPath += "/";
 		}
@@ -58,6 +102,8 @@ public class GraphInfraReaderArray {
 		this.addBackward = addBackward;
 
 		stopWords = DummyFunctions.getStopwordsSet();
+
+
 
 		if (DummyProperties.debugMode)
 			System.out.println("stop words size: " + stopWords.size());
@@ -79,6 +125,8 @@ public class GraphInfraReaderArray {
 		if (addBackward) {
 			addBackwardEdges();
 		}
+		
+		updateDegree();
 
 		if (DummyProperties.debugMode) {
 			System.out.println("reading graph duration: " + ((System.nanoTime() - startTime) / 1e6));
@@ -177,6 +225,9 @@ public class GraphInfraReaderArray {
 	private void readVertices() throws Exception {
 		FileInputStream fis = new FileInputStream(graphInfraPath + "" + verticesFileName);
 		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+		
+		urlIdsOfLabel = new HashMap<Integer, HashSet<Integer>>();
+		labelIdsIdsOfLabel = new HashMap<Integer, HashSet<Integer>>();
 
 		String line = null;
 		while ((line = br.readLine()) != null) {
@@ -201,6 +252,10 @@ public class GraphInfraReaderArray {
 			int inDegree = Integer.parseInt(splittedVerticeLine[1]);
 			int outDegree = Integer.parseInt(splittedVerticeLine[2]);
 
+//			if(nodeId==497){
+//				System.out.println();
+//			}
+
 			NodeInfra node = new NodeInfra(nodeId);
 			node.inDegree = inDegree;
 			node.outDegree = outDegree;
@@ -212,13 +267,59 @@ public class GraphInfraReaderArray {
 			// HashMap<>(nodeOfNodeId.get(nodeId).inDegree);
 
 			if (readLabels) {
+
+//				if(node.nodeId==51067){
+//					System.out.println();
+//				}
+
+				HashSet<Integer> labelIds = new HashSet<Integer>();
+				int urlId = 0;
 				if (splittedVerticeLine.length > 3) {
 					String[] labels = splittedVerticeLine[3].split(";");
-					for (String lbl : labels)
+					for (String lbl : labels) {
 						if (lbl.trim().length() > 0) {
-							for (Integer tokenId : DummyFunctions.getTokensOfALabel(lbl))
+							for (Integer tokenId : DummyFunctions.getTokensOfALabel(lbl)) {
 								node.addToken(tokenId);
+//								if (freuencyOfTokens.containsKey(tokenId)) {
+//									int frequency = freuencyOfTokens.get(tokenId) + 1;
+//									freuencyOfTokens.replace(tokenId, frequency);
+//								} else {
+//									freuencyOfTokens.put(tokenId, 1);
+//								}
+							}
 						}
+						// TODO: if lbl starts with uri_ => insrt to pool and
+						// add to int uri.
+						// TODO: else insrt to pool get the id and add it to the
+						// set of labelIds.
+
+						if (lbl.contains("uri_")) {
+							String newToken = "";
+							String[] tem = lbl.trim().split("_");
+							for (int i = 1; i < tem.length; i++) {
+								newToken = newToken.trim() + " " + tem[i];
+							}
+							urlId = StringPoolUtility.insertIntoStringPool(newToken);
+							node.urlId = urlId;
+						} else {
+							int labelId = StringPoolUtility.insertIntoStringPool(lbl.trim().toLowerCase());
+							labelIds.add(labelId);
+							HashSet<Integer> labelTokens = DummyFunctions.getTokensOfALabel(lbl);
+							labelIdsIdsOfLabel.put(labelId, labelTokens);
+						}
+					}
+					node.labels = labelIds;
+					for (int labelId : labelIds) {
+						for (int labelToken : labelIdsIdsOfLabel.get(labelId)) {
+							if (urlIdsOfLabel.containsKey(labelToken)) {
+								urlIdsOfLabel.get(labelToken).add(urlId);
+							} else {
+								HashSet<Integer> urlSet = new HashSet<Integer>();
+								urlSet.add(urlId);
+								urlIdsOfLabel.put(labelToken, urlSet);
+							}
+						}
+					}
 				}
 			}
 
@@ -241,7 +342,10 @@ public class GraphInfraReaderArray {
 												 * StringPoolUtility.
 												 * insertIntoStringPool(key),
 												 */ tokenValues);
-
+							if (node.urlId == -1) {
+								int urlId = StringPoolUtility.insertIntoStringPool(propsKeyVal[1]);
+								node.urlId = urlId;
+							}
 						}
 					}
 				}
@@ -301,10 +405,20 @@ public class GraphInfraReaderArray {
 
 			if (DummyProperties.readRelType && readLabels) {
 				if (splittedRelLine.length > 3) {
-					if (splittedRelLine[3].trim().length() > 0)
-						for (Integer typeId : DummyFunctions.getTokensOfALabel(splittedRelLine[3])) {
+					if (splittedRelLine[3].trim().length() > 0) {
+						//edgeType:
+						String edgeType = splittedRelLine[3];
+						if (edgeType.startsWith("http")) {
+							edgeType = edgeType.replace("http //","http://");
+							edgeType = edgeType.replaceAll(" ", "");
+							URI uri = new URI(edgeType);
+							String path = uri.getPath();
+							edgeType = path.substring(path.lastIndexOf('/') + 1);
+						}
+						for (Integer typeId : DummyFunctions.getTokensOfALabel(edgeType)) {
 							rel.addType(typeId);
 						}
+					}
 				}
 			}
 
@@ -415,6 +529,15 @@ public class GraphInfraReaderArray {
 		}
 		return relIdsOfType;
 
+	}
+	
+	public void updateDegree() {
+		for (NodeInfra sourceNode : nodeOfNodeId) {
+			sourceNode.outDegree = sourceNode.getOutgoingRelIdOfSourceNodeId().size();
+			for (Integer targetNodeId : sourceNode.getOutgoingRelIdOfSourceNodeId().keySet()) {
+				nodeOfNodeId.get(targetNodeId).inDegree++;
+			}
+		}
 	}
 }
 

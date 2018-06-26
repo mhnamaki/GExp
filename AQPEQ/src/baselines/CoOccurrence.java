@@ -9,7 +9,6 @@ import aqpeq.utilities.MapUtil;
 import aqpeq.utilities.StringPoolUtility;
 import aqpeq.utilities.Dummy.DummyFunctions;
 import aqpeq.utilities.Dummy.DummyProperties;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 import queryExpansion.AnswerAsInput;
 
@@ -29,12 +28,12 @@ public class CoOccurrence {
 
 	// top selected keywords
 	public ArrayList<String> topFrequentKeywords;
+	public ArrayList<Integer> topFrequentKeywordsInt;
 
 	private HashSet<String> initialKeywords;
 
 	private HashMap<Integer, HashSet<Integer>> nodeIdsOfToken;
 
-	private static BerkleleyDB berkeleyDB;
 
 	public CoOccurrence(GraphInfraReaderArray graph, HashMap<Integer, HashSet<Integer>> nodeIdsOfToken,
 			ArrayList<AnswerAsInput> topNAnswers, int k, Collection<String> initialKeywords) {
@@ -65,6 +64,7 @@ public class CoOccurrence {
 		String minFreqKeyword = StringPoolUtility.getStringOfId(map.entrySet().iterator().next().getKey());
 
 		topFrequentKeywords = new ArrayList<String>();
+		topFrequentKeywordsInt = new ArrayList<Integer>();
 
 		for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
 
@@ -93,6 +93,7 @@ public class CoOccurrence {
 				continue;
 
 			topFrequentKeywords.add(StringPoolUtility.getStringOfId(entry.getKey()));
+			topFrequentKeywordsInt.add(entry.getKey());
 
 			i++;
 

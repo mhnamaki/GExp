@@ -11,7 +11,6 @@ import java.util.LinkedList;
 import aqpeq.utilities.KWSUtilities;
 import aqpeq.utilities.Dummy.DummyFunctions;
 import aqpeq.utilities.Dummy.DummyProperties;
-import dataset.BerkeleyDB.BerkleleyDB;
 import graphInfra.GraphInfraReaderArray;
 
 public class SteinerKWSExpansion {
@@ -47,7 +46,7 @@ public class SteinerKWSExpansion {
 	public CostAndNodesOfAnswersPair bestKeywordInfo;
 
 	private HashSet<Integer> initialKeywords;
-	private BerkleleyDB berkeleyDB;
+
 
 	public int highFrequentKeywordsRemovedNum = 0;
 	public double getKeywordsDuration = 0d;
@@ -63,13 +62,12 @@ public class SteinerKWSExpansion {
 	// public HashSet<Integer> G_r_Nodes = new HashSet<Integer>();
 	// public HashSet<Integer> G_r_Edges = new HashSet<Integer>();
 
-	public SteinerKWSExpansion(GraphInfraReaderArray graph, ArrayList<AnswerAsInput> topNAnswers, double delta, int b,
-			BerkleleyDB berkeleyDB, HashSet<Integer> initialKeywords) {
+	public SteinerKWSExpansion(GraphInfraReaderArray graph, ArrayList<AnswerAsInput> topNAnswers, double delta, int b, HashSet<Integer> initialKeywords) {
 		this.topNAnswers = topNAnswers;
 		this.delta = delta;
 		this.graph = graph;
 		this.initialKeywords = initialKeywords;
-		this.berkeleyDB = berkeleyDB;
+
 
 		for (int m = 0; m < topNAnswers.size(); m++) {
 			this.w += topNAnswers.get(m).getCost();

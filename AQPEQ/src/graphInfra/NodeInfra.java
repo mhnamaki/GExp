@@ -3,12 +3,19 @@ package graphInfra;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import aqpeq.utilities.StringPoolUtility;
+import graphInfra.BipartiteGraph.BipartiteSide;
+
 public class NodeInfra {
 	public int nodeId;
 	public HashSet<Integer> tokens;
 	private HashSet<Integer> properties;
+	public HashSet<Integer> labels;
+	public int urlId = -1;
 	public int inDegree = 0;
 	public int outDegree = 0;
+	public float weight = 0f;
+	public BipartiteSide bipartiteSide = null;
 
 	// src -> dest -> relIds (multi-relationships)
 	public HashMap<Integer, Integer> outgoingRelIdOfSourceNodeId;
@@ -127,7 +134,42 @@ public class NodeInfra {
 
 	@Override
 	public String toString() {
-		return "id:" + nodeId + " oD:" + this.getOutDegree() + " iD:" + this.getInDegree() + " l:" + this.getTokens();
+		String label = "";
+		try {
+			label = StringPoolUtility.getStringOfId(urlId) + ": [";
+			int cnt = 1;
+			int labelSize = labels.size();
+			for (int labelId : labels) {
+
+				if (cnt < labelSize) {
+					label += StringPoolUtility.getStringOfId(labelId) + ", ";
+				} else {
+					label += StringPoolUtility.getStringOfId(labelId);
+				}
+				cnt++;
+
+			}
+		} catch (Exception e1) {
+			System.err.println("node Id " + this.nodeId + " couldn't find urlId " + urlId);
+			e1.printStackTrace();
+		}
+		
+		label += "]";
+
+		return label;
+	}
+
+	public String toStringToolTips() {
+
+		String url = "";
+		try {
+			url = StringPoolUtility.getStringOfId(urlId);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return "id:" + nodeId + " l:" + url;
 	}
 
 	public HashSet<Integer> getProperties() {
