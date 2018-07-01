@@ -1,0 +1,34 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<!--
+
+  @(#)package.html
+
+ Copyright (c) 2003-2015 The JUNG Authors. 
+ All Rights Reserved. 
+ 
+ License text: https://github.com/jrtom/jung/blob/master/LICENSE
+-->
+</head>
+<body>
+
+Mechanisms for identifying clusters in graphs.  Where these clusters define disjoint sets of nodes,
+they may be used to define a <code>NodePartition</code> for more convenient manipulation of the node/set
+relationships.
+
+Current clustering algorithms include:
+<ul>
+<li><code>BicomponentClusterer</code>: finds all subsets of nodes for which at least
+2 nodes must be removed in order to disconnect the induced subgraphs.
+<li><code>EdgeBetweennessClusterer</code>: identifies node clusters by removing the edges of the highest
+'betweenness' scores (see the importance/scoring package).
+<li><code>VoltageClusterer</code>: Clusters nodes based on their ranks as
+calculated by <code>VoltageRanker</code>. 
+<li><code>WeakComponentNodeClusterer</code>: Clusters nodes based on their membership in weakly
+connected components of a graph.
+</ul>
+
+
+</body>
+</html>

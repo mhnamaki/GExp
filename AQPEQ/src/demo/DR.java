@@ -24,7 +24,7 @@ import com.google.common.graph.NetworkBuilder;
 
 import aqpeq.utilities.Dummy.DummyProperties;
 import aqpeq.utilities.StringPoolUtility;
-import bank.keywordSearch.test;
+import bank.keywordSearch.DRDemo;
 import edu.uci.ics.jung.graph.CTreeNetwork;
 import edu.uci.ics.jung.graph.MutableCTreeNetwork;
 import edu.uci.ics.jung.graph.TreeNetworkBuilder;
@@ -44,7 +44,7 @@ public class DR implements KWSSearch {
 
     //	String graphBase = "../GraphExamples/demo/";
 //	String graphPath = "";
-    public test dr = new test();
+    public DRDemo dr = new DRDemo();
     int heapSize = 100;
     Configuration config;
     int treeId = 0;

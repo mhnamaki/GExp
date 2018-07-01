@@ -1,0 +1,25 @@
+#General
+*.orig
+~*
+*~
+*.bak
+
+# Maven
+target/
+*.ser
+*.ec
+
+# IntelliJ Idea
+.idea/
+out/
+*.ipr
+*.iws
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+.factoryPath
+bin/

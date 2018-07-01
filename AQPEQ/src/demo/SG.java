@@ -14,7 +14,6 @@ import pairwiseBasedKWS.PairwiseKeywordSearchDemo;
 import queryExpansion.AnswerAsInput;
 import queryExpansion.CostAndNodesOfAnswersPair;
 import relevantDiversificationLibraries.Diversification;
-import steiner.keywordSearch.StinerbasedKWSDemo;
 import tryingToTranslate.PrunedLandmarkLabeling;
 
 import java.util.*;

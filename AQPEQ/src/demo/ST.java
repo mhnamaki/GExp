@@ -3,7 +3,6 @@ package demo;
 import aqpeq.utilities.Dummy.DummyProperties;
 import aqpeq.utilities.MapUtil;
 import aqpeq.utilities.StringPoolUtility;
-import bank.keywordSearch.test;
 import graphInfra.GraphInfraReaderArray;
 import graphInfra.NodeInfra;
 import graphInfra.RelationshipInfra;
@@ -14,7 +13,7 @@ import neo4jBasedKWS.ResultTree;
 import queryExpansion.AnswerAsInput;
 import queryExpansion.CostAndNodesOfAnswersPair;
 import relevantDiversificationLibraries.Diversification;
-import steiner.keywordSearch.StinerbasedKWSDemo;
+import steiner.keywordSearch.SteinerbasedKWSDemo;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -23,7 +22,7 @@ public class ST implements KWSSearch {
 
     //	String graphBase = "../GraphExamples/demo/";
 //	String graphPath = "";
-    public StinerbasedKWSDemo st = new StinerbasedKWSDemo();
+    public SteinerbasedKWSDemo st = new SteinerbasedKWSDemo();
 
     int heapSize = 100;
     Configuration config;
